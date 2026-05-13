@@ -2,24 +2,12 @@
 /**
   ******************************************************************************
   * @file           : main.c
-  * @brief          : Campus Noise Monitor � STM32F303K8 + Pmod CLP LCD
-  *
-  * PORTED FROM STM32L432KC � Key changes:
-  *   - SystemClock_Config   : MSI+PLL removed; HSI 8MHz x6 PLL = 48MHz
-  *   - ADC channel          : PB0 = ADC1_IN11 (was IN15 on L432)
-  *   - ADC calibration      : HAL_ADCEx_Calibration_Start(&hadc1) � no 2nd arg
-  *   - ADC channel config   : F3 struct has no SingleDiff / OffsetNumber
-  *   - TIM2 prescaler/period: recalculated for 48MHz core
-  *   - UART2 RX pin         : PA3 (was PA15 on L432)
+  * @brief          : Campus Noise Monitor STM32F303K8 + Pmod CLP LCD
   *
   * Pmod CLP wiring (UNCHANGED):
   *   DB0-DB7 : PA0,PA1,PA3,PA4,PA5,PA6,PA7,PA8
   *
-  * !! CONFLICT 
-  *    Resolution: move LCD DB2 to PB1 (free GPIO on F303K8).
-  *    Update #define LCD_DB2_PIN and MX_GPIO_Init accordingly.
-  *    See wiring note below.
-  *
+
   *   DB0     : PA0
   *   DB1     : PA1
   *   DB2     : PB1   
@@ -58,12 +46,11 @@ typedef struct {
 
 /* Private define ------------------------------------------------------------*/
 
-/* Pmod CLP data bus � DB2 moved to PB1 to free PA3 for UART2 RX */
 #define LCD_DB0_PORT    GPIOA
 #define LCD_DB0_PIN     GPIO_PIN_0
 #define LCD_DB1_PORT    GPIOA
 #define LCD_DB1_PIN     GPIO_PIN_1
-#define LCD_DB2_PORT    GPIOB              /* << moved from PA3 */
+#define LCD_DB2_PORT    GPIOB
 #define LCD_DB2_PIN     GPIO_PIN_1
 #define LCD_DB3_PORT    GPIOA
 #define LCD_DB3_PIN     GPIO_PIN_4
@@ -173,7 +160,6 @@ static void lcd_update(uint16_t avg);
 
 /* USER CODE BEGIN 0 */
 
-/* ---- Callbacks ---------------------------------------------------------- */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == TIM2) { g_tick = 1u; }
@@ -189,7 +175,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     }
 }
 
-/* ---- ADC ---------------------------------------------------------------- */
+//ADC
 static uint16_t adc_peak_to_peak(void)
 {
     uint16_t mn = 4095u, mx = 0u;
@@ -207,7 +193,7 @@ static uint16_t adc_peak_to_peak(void)
     return (mx >= mn) ? (mx - mn) : 0u;
 }
 
-/* ---- Filter ------------------------------------------------------------- */
+//Filter
 static uint16_t moving_avg(uint16_t sample)
 {
     filt_sum           -= (uint32_t)filt_buf[filt_head];
@@ -217,7 +203,7 @@ static uint16_t moving_avg(uint16_t sample)
     return (uint16_t)(filt_sum / FILT_LEN);
 }
 
-/* ---- Preset ------------------------------------------------------------- */
+//Preset
 static void apply_preset(uint8_t idx)
 {
     char buf[56];
@@ -233,7 +219,7 @@ static void apply_preset(uint8_t idx)
     g_state = ST_QUIET; alarm_cnt = 0u; calm_cnt = 0u;
 }
 
-/* ---- Button ------------------------------------------------------------- */
+//Button
 static void button_init(void)
 {
     GPIO_InitTypeDef gpio;
@@ -259,7 +245,7 @@ static void button_poll(void)
     last_state = cur;
 }
 
-/* ---- FSM ---------------------------------------------------------------- */
+//fsm
 static void update_state(uint16_t avg)
 {
     switch (g_state)
@@ -319,7 +305,7 @@ static void update_state(uint16_t avg)
     }
 }
 
-/* ---- UART --------------------------------------------------------------- */
+//	UART
 static void uart_log(uint16_t raw_pp, uint16_t avg)
 {
     static const char * const sn[] = { "QUIET", "WARN ", "ALARM" };
@@ -367,7 +353,7 @@ static void uart_process_rx(void)
     }
 }
 
-/* ---- LCD driver --------------------------------------------------------- */
+//LCD driver
 static void lcd_delay_us(uint32_t us)
 {
     /* At 48 MHz, ~12 NOPs per microsecond */
@@ -525,14 +511,7 @@ int main(void)
     }
 }
 
-/* =========================================================================
- * Peripheral init � rewritten for STM32F303K8
- * ========================================================================= */
 
-/**
-  * @brief  System clock: HSI 8 MHz x6 PLL = 48 MHz SYSCLK
-  *         (No MSI on F3; HAL_PWREx_ControlVoltageScaling does not exist on F3)
-  */
 void SystemClock_Config(void)
 {
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -589,12 +568,7 @@ static void MX_ADC1_Init(void)
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) { Error_Handler(); }
 }
 
-/**
-  * @brief  TIM2 � 10 Hz tick
-  *         SYSCLK = 48 MHz, APB1 timer clock = 48 MHz (APB1 prescaler=2, so TIM clock x2)
-  *         Prescaler = 47999 ? 48MHz/48000 = 1 kHz
-  *         Period    = 99    ? 1kHz/100    = 10 Hz
-  */
+//TIM2  10 Hz tick ,SYSCLK = 48 MHz, APB1 timer clock = 48 MHz (APB1 prescaler=2, so TIM clock x2), Prescaler = 47999 ? 48MHz/48000 = 1 kHz, Period    = 99    ? 1kHz/100    = 10 Hz
 static void MX_TIM2_Init(void)
 {
     TIM_ClockConfigTypeDef  sClockSourceConfig = {0};
@@ -618,11 +592,6 @@ static void MX_TIM2_Init(void)
         { Error_Handler(); }
 }
 
-/**
-  * @brief  USART2 � 115200 8N1
-  *         TX=PA2, RX=PA3  (PA3 replaces PA15 which is JTDI on F303K8)
-  *         The HAL_UART_Init MSP hook must map PA3 to AF7 for USART2.
-  */
 static void MX_USART2_UART_Init(void)
 {
     huart2.Instance                    = USART2;
@@ -650,18 +619,17 @@ static void MX_GPIO_Init(void)
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_GPIOF_CLK_ENABLE();
 
-    /* --- Default output levels --- */
+    // Default output levels
 		HAL_GPIO_WritePin(GPIOF, GPIO_PIN_0 | GPIO_PIN_1, GPIO_PIN_RESET);
     /* PA0, PA1, PA4-PA9 � LCD bus (PA2=UART TX, PA3=UART RX, PA10=button) */
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_4 | GPIO_PIN_5
                            | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9,
                      GPIO_PIN_RESET);
-    /* PB1=LCD DB2, PB3=LD3, PB4=green, PB5=red, PB6=buzzer */
-    /* PB0 left as analog input � do not touch here */
+    /* PB1=LCD DB2, PB3=LD3, PB4=green, PB5=red*/
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1 | GPIO_PIN_3 | GPIO_PIN_4
                            | GPIO_PIN_5 | GPIO_PIN_6, GPIO_PIN_RESET);
 
-    /* PF0, PF1 � LCD RS, R/W */
+    /* PF0, PF1 LCD RS, R/W */
    __HAL_RCC_GPIOF_CLK_ENABLE();
 
 		HAL_GPIO_WritePin(GPIOF, GPIO_PIN_0 | GPIO_PIN_1, GPIO_PIN_RESET);
@@ -686,7 +654,7 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    /* PB1=LCD DB2, PB3=LD3, PB4=green, PB5=red, PB6=buzzer � outputs */
+    /* PB1=LCD DB2, PB3=LD3, PB4=green, PB5=red outputs */
     GPIO_InitStruct.Pin   = GPIO_PIN_1 | GPIO_PIN_3 | GPIO_PIN_4
                           | GPIO_PIN_5 | GPIO_PIN_6;
     GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
@@ -694,7 +662,7 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    /* PB0 � analog input for ADC (leave unconfigured as GPIO) */
+    /* PB0 analog input for ADC */
     GPIO_InitStruct.Pin  = GPIO_PIN_0;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;

@@ -4,7 +4,7 @@
   * @file           : main.c
   * @brief          : Campus Noise Monitor STM32F303K8 + Pmod CLP LCD
   *
-  * Pmod CLP wiring (UNCHANGED):
+  * Pmod CLP wiring:
   *   DB0-DB7 : PA0,PA1,PB1,PA4,PA5,PA6,PA7,PA8
   *
 
@@ -488,7 +488,7 @@ int main(void)
             "\r\n=== Campus Noise Monitor (F303K8 port) ===\r\n"
             "Presets: 0=Library  1=StudyRoom  2=Lab\r\n"
             "Commands: SET THR WARN <n>  /  SET THR ALARM <n>\r\n"
-            "UART2: TX=PA2  RX=PA3  115200 8N1\r\n"
+            "UART2: TX=PA2  RX=PA15  115200 8N1\r\n"
             "--------------------------------------------\r\n";
         HAL_UART_Transmit(&huart2, (uint8_t *)banner,
                           (uint16_t)(sizeof(banner) - 1u), 200u);

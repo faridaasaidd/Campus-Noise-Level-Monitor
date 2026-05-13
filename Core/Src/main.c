@@ -476,7 +476,7 @@ int main(void)
     HAL_GPIO_WritePin(LCD_RW_PORT, LCD_RW_PIN, GPIO_PIN_RESET);
     lcd_init();
 
-    /* TIM2 interrupt � 10 Hz tick */
+    /* TIM2 interrupt 10 Hz tick */
     if (HAL_TIM_Base_Start_IT(&htim2) != HAL_OK) { Error_Handler(); }
 
     /* UART RX interrupt */
@@ -606,11 +606,7 @@ static void MX_USART2_UART_Init(void)
     if (HAL_UART_Init(&huart2) != HAL_OK) { Error_Handler(); }
 }
 
-/**
-  * @brief  GPIO init for STM32F303K8
-  *         DB2 moved to PB1 (PA3 is now UART2 RX).
-  *         PB0 is ADC input � do NOT configure as GPIO output.
-  */
+
 static void MX_GPIO_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -621,7 +617,7 @@ static void MX_GPIO_Init(void)
 
     // Default output levels
 		HAL_GPIO_WritePin(GPIOF, GPIO_PIN_0 | GPIO_PIN_1, GPIO_PIN_RESET);
-    /* PA0, PA1, PA4-PA9 � LCD bus (PA2=UART TX, PA3=UART RX, PA10=button) */
+    /* PA0, PA1, PA4-PA9 LCD bus (PA2=UART TX, PA5=UART RX, PA10=button) */
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_4 | GPIO_PIN_5
                            | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9,
                      GPIO_PIN_RESET);
@@ -640,7 +636,7 @@ static void MX_GPIO_Init(void)
 		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 		HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
-    /* PA0, PA1, PA4-PA9 � LCD data bits (DB0, DB1, DB3-DB7) + E */
+    /* PA0, PA1, PA4-PA9 LCD data bits (DB0, DB1, DB3-DB7) + E */
     GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_4 | GPIO_PIN_5
                         | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9;
     GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
@@ -648,7 +644,7 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    /* PA10 � button input, pull-up */
+    /* PA10 button input, pull-up */
     GPIO_InitStruct.Pin  = GPIO_PIN_10;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_PULLUP;

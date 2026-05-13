@@ -5,7 +5,7 @@
   * @brief          : Campus Noise Monitor STM32F303K8 + Pmod CLP LCD
   *
   * Pmod CLP wiring (UNCHANGED):
-  *   DB0-DB7 : PA0,PA1,PA3,PA4,PA5,PA6,PA7,PA8
+  *   DB0-DB7 : PA0,PA1,PB1,PA4,PA5,PA6,PA7,PA8
   *
 
   *   DB0     : PA0
